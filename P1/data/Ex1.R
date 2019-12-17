@@ -34,3 +34,58 @@ summary(fit)
 
 fit.2<- step(glm(satellites~., data= crabs, family=poisson(link=log)))
 summary(fit.2)
+
+
+####################################################################################
+####################################################################################
+####################################################################################
+#iteratively reweighted least squares algorithm
+crabs$color = factor(crabs$color, levels =c(1,2,3,4))
+crabs$spine_condition = factor(crabs$spine_condition, levels = c(1,2,3))
+library(msme)
+
+irls.poi <- irls(satellites ~ .,
+                 family = "poisson",
+                 link = "log",
+                 data = crabs)
+summary(irls.poi)
+
+
+# 4.4
+# NEW IRWLS using the deviance
+IRWLS <- function(x,y,tolerance,lev){
+  # x        : predictor
+  # y        : binary responce
+  # tolerance: stopping criterion
+  # lev      : level for the confidence intervals
+  Dev       = 0
+  delta.Dev = 2*tolerance
+  n         = length(x)
+  mu <- rep(mean(y), n)     # initialize mu 
+  eta <- log(mu)                 # initialize eta
+  while ( abs(delta.Dev) > tolerance) {     
+    w <- mu                      # weight = variance
+    z <- eta + (y - mu)/(mu*(1-mu))     # working response
+    mod <- lm(z ~ x, weights = w)       # weighted regression
+    eta <- mod$fit                      # linear predictor
+    mu <- exp(eta)              # fitted value
+    print(mu)
+    Dev.old   = Dev
+    Dev       = 2*sum(y*log(1/mu)+(1-y)*log(mu))
+    delta.Dev = Dev- Dev.old
+    print(abs(delta.Dev))
+  }
+  model.coef    = mod$coefficients
+  model.se      = sqrt(diag(summary(mod)$cov.unscaled))
+  lower         = mod$coefficients-qnorm(1-(1-lev)/2)*model.se
+  upper         = mod$coefficients+qnorm(1-(1-lev)/2)*model.se
+  CI            = cbind(lower,upper)
+  Z             = mod$coefficients/model.se
+  pvalues       = 2*pnorm(abs(Z), lower.tail = FALSE)
+  
+  list(coeff=model.coef,se=model.se,default.glm.ConfInt=CI,z.stat=Z,p.values=pvalues)
+}
+x=as.numeric(crabs$weight)
+y=as.numeric(crabs$satellites)
+mymodel <- IRWLS(x,y,0.1,0.95)
+mymodel
