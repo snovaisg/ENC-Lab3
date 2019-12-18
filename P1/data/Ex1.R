@@ -29,11 +29,17 @@ crabs$color = factor(crabs$color, levels =c(1,2,3,4,5))
 crabs$spine_condition = factor(crabs$spine_condition, levels = c(1,2,3))
 
 
+library(MASS)
+
 fit <- glm(satellites ~ ., data = crabs, family=poisson(link=log))
 summary(fit)
 
+stepAIC(fit)
+
 fit.2<- step(glm(satellites~., data= crabs, family=poisson(link=log)))
 summary(fit.2)
+
+round(confint(fit.2),3)
 
 
 ####################################################################################
@@ -65,13 +71,13 @@ IRWLS <- function(x,y,tolerance,lev){
   eta <- log(mu)                 # initialize eta
   while ( abs(delta.Dev) > tolerance) {     
     w <- mu                      # weight = variance
-    z <- eta + (y - mu)/(mu*(1-mu))     # working response
+    z <- eta + (y - mu)/(mu)     # working response
     mod <- lm(z ~ x, weights = w)       # weighted regression
     eta <- mod$fit                      # linear predictor
-    mu <- exp(eta)              # fitted value
-    print(mu)
+    mu <- exp(eta)                        # fitted value
     Dev.old   = Dev
-    Dev       = 2*sum(y*log(1/mu)+(1-y)*log(mu))
+    Dev       = 2*sum(y*log(y/mu)-(y-mu))
+    print(Dev)
     delta.Dev = Dev- Dev.old
     print(abs(delta.Dev))
   }
@@ -85,7 +91,8 @@ IRWLS <- function(x,y,tolerance,lev){
   
   list(coeff=model.coef,se=model.se,default.glm.ConfInt=CI,z.stat=Z,p.values=pvalues)
 }
-x=as.numeric(crabs$weight)
-y=as.numeric(crabs$satellites)
-mymodel <- IRWLS(x,y,0.1,0.95)
+y=as.numeric(crabs$weight)
+x=as.numeric(crabs$satellites)
+mymodel <- IRWLS(x,y,0.0000001,0.95)
 mymodel
+
