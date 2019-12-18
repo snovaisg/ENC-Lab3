@@ -39,7 +39,7 @@ stepAIC(fit)
 fit.2<- step(glm(satellites~., data= crabs, family=poisson(link=log)))
 summary(fit.2)
 
-round(confint(fit.2),3)
+round(confint(fit),3)
 
 
 ####################################################################################
@@ -76,7 +76,8 @@ IRWLS <- function(x,y,tolerance,lev){
     eta <- mod$fit                      # linear predictor
     mu <- exp(eta)                        # fitted value
     Dev.old   = Dev
-    Dev       = 2*sum(y*log(y/mu)-(y-mu))
+    print(mu)
+    Dev     = 2*sum(y*log(y/mu)-(y-mu))
     print(Dev)
     delta.Dev = Dev- Dev.old
     print(abs(delta.Dev))
@@ -91,8 +92,8 @@ IRWLS <- function(x,y,tolerance,lev){
   
   list(coeff=model.coef,se=model.se,default.glm.ConfInt=CI,z.stat=Z,p.values=pvalues)
 }
-y=as.numeric(crabs$weight)
+y=as.numeric(crabs$color)
 x=as.numeric(crabs$satellites)
-mymodel <- IRWLS(x,y,0.0000001,0.95)
+mymodel <- IRWLS(x,y,0.00001,0.95)
 mymodel
 
